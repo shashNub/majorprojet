@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import csv
 from scrape import scrape_and_save
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from organizations import ORGANIZATIONS
+import pandas as pd
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session management
@@ -20,6 +22,7 @@ def init_users_file():
 @app.route("/", methods=["GET", "POST"])
 def index():
     if 'username' not in session:
+        print("User not logged in, redirecting to login")
         return redirect(url_for('login'))
     jobs = []
     qualification = ""
@@ -102,6 +105,44 @@ def logout():
     session.pop('username', None)
     flash('You have been logged out')
     return redirect(url_for('login'))
+
+@app.route('/dashboard')
+def dashboard():
+    print("Accessing dashboard route")
+    if 'username' not in session:
+        print("User not logged in, redirecting to login")
+        return redirect(url_for('login'))
+    print("User is logged in, rendering dashboard")
+    return render_template('dashboard.html')
+
+@app.route('/get_job_data')
+def get_job_data():
+    print("Accessing get_job_data route")
+    if 'username' not in session:
+        print("User not logged in, returning empty data")
+        return jsonify([])
+    
+    df = load_job_data()
+    if df.empty:
+        print("No job data found")
+        return jsonify([])
+    
+    # Replace NaN values with empty strings to make it JSON serializable
+    df = df.fillna('')
+
+    print(f"Found {len(df)} job records")
+    data = df.to_dict('records')
+    return jsonify(data)
+
+# Load job data
+def load_job_data():
+    try:
+        df = pd.read_csv('freejobalert_latest_notifications.csv')
+        print(f"Successfully loaded CSV with {len(df)} rows")
+        return df
+    except Exception as e:
+        print(f"Error loading CSV: {str(e)}")
+        return pd.DataFrame()
 
 if __name__ == "__main__":
     init_users_file()

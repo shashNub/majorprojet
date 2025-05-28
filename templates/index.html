@@ -161,9 +161,14 @@
     <div class="container">
       <div class="project-title">AI-Based Government Job Navigator</div>
       <div class="nav-links">
-        <a href="/">Home</a>
-        <a href="/login">Login</a>
-        <a href="/register">Register</a>
+        <a href="{{ url_for('index') }}">Home</a>
+        {% if 'username' in session %}
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
       </div>
       <h1>Job Search</h1>
       <form method="POST">
